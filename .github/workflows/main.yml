@@ -26,7 +26,9 @@ jobs:
         run: |
           python3 tools/holidays.py
           echo "$KEYSTORE_B64" | base64 -d > release.jks
-          gradle assembleRelease
+          # 빌드 실패 시 컴파일 오류를 annotation으로 남김 (로그를 못 받는 환경에서도 원인 확인용)
+          gradle assembleRelease 2>&1 | tee build.log
+          test ${PIPESTATUS[0]} -eq 0 || { grep -E '^e: |What went wrong' -A2 build.log | head -30 | sed 's/^/::error::/'; exit 1; }
           cp app/build/outputs/apk/release/app-release.apk ShowerAlarm.apk
           echo "$VERSION_CODE" > version.txt
           gh release create "v$VERSION_CODE" ShowerAlarm.apk version.txt --repo "$GITHUB_REPOSITORY" --title "v$VERSION_CODE" --notes "$(git log -1 --format=%s)"
