@@ -1,8 +1,15 @@
 name: build
 on: [push, workflow_dispatch]
+permissions:
+  contents: write
 jobs:
   apk:
     runs-on: ubuntu-latest
+    env:
+      VERSION_CODE: ${{ github.run_number }}
+      KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
+      KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
       - run: unzip -q ShowerAlarm.zip
@@ -10,7 +17,10 @@ jobs:
         with: { distribution: temurin, java-version: 17 }
       - uses: gradle/actions/setup-gradle@v6
         with: { gradle-version: '8.13' }
-      - run: gradle assembleDebug
-        working-directory: ShowerAlarm
-      - uses: actions/upload-artifact@v4
-        with: { name: ShowerAlarm, path: ShowerAlarm/app/build/outputs/apk/debug/app-debug.apk }
+      - working-directory: ShowerAlarm
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > release.jks
+          gradle assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk ShowerAlarm.apk
+          echo "$VERSION_CODE" > version.txt
+          gh release create "v$VERSION_CODE" ShowerAlarm.apk version.txt --repo "$GITHUB_REPOSITORY" --title "v$VERSION_CODE" --notes ""
