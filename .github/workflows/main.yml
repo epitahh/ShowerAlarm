@@ -1,5 +1,9 @@
 name: build
-on: [push, workflow_dispatch]
+on:
+  push:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 18 * * 0'
 permissions:
   contents: write
 jobs:
@@ -9,6 +13,7 @@ jobs:
       VERSION_CODE: ${{ github.run_number }}
       KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
       KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+      HOLIDAY_KEY: ${{ secrets.HOLIDAY_KEY }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
@@ -19,6 +24,7 @@ jobs:
         with: { gradle-version: '8.13' }
       - working-directory: ShowerAlarm
         run: |
+          python3 tools/holidays.py
           echo "$KEYSTORE_B64" | base64 -d > release.jks
           gradle assembleRelease
           cp app/build/outputs/apk/release/app-release.apk ShowerAlarm.apk
