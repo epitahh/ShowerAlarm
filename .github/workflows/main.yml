@@ -29,4 +29,4 @@ jobs:
           gradle assembleRelease
           cp app/build/outputs/apk/release/app-release.apk ShowerAlarm.apk
           echo "$VERSION_CODE" > version.txt
-          gh release create "v$VERSION_CODE" ShowerAlarm.apk version.txt --repo "$GITHUB_REPOSITORY" --title "v$VERSION_CODE" --notes ""
+          gh release create "v$VERSION_CODE" ShowerAlarm.apk version.txt --repo "$GITHUB_REPOSITORY" --title "v$VERSION_CODE" --notes "$(git log -1 --format=%s)"
