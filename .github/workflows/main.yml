@@ -30,5 +30,12 @@ jobs:
           gradle assembleRelease 2>&1 | tee build.log
           test ${PIPESTATUS[0]} -eq 0 || { grep -E '^e: |What went wrong' -A2 build.log | head -30 | sed 's/^/::error::/'; exit 1; }
           cp app/build/outputs/apk/release/app-release.apk ShowerAlarm.apk
+          # version.txt: 자동 업데이트 판단용 빌드 번호, name.txt: 표시용 버전 이름(app/build.gradle.kts의 versionName)
           echo "$VERSION_CODE" > version.txt
-          gh release create "v$VERSION_CODE" ShowerAlarm.apk version.txt --repo "$GITHUB_REPOSITORY" --title "v$VERSION_CODE" --notes "$(git log -1 --format=%s)"
+          NAME=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          echo "$NAME" > name.txt
+          # 같은 버전 이름으로 다시 빌드되면(예: 주간 공휴일 갱신) 기존 릴리스를 교체
+          gh release delete "v$NAME" --cleanup-tag -y --repo "$GITHUB_REPOSITORY" || true
+          gh release create "v$NAME" ShowerAlarm.apk version.txt name.txt --repo "$GITHUB_REPOSITORY" --title "v$NAME" --notes "$(git log -1 --format=%s)"
+          # 예전 번호 방식(v숫자) 릴리스는 삭제
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 200 --json tagName --jq '.[].tagName' | grep -E '^v[0-9]+$' | xargs -r -I{} gh release delete {} --cleanup-tag -y --repo "$GITHUB_REPOSITORY"
