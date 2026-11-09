@@ -3,7 +3,7 @@ on:
   push:
   workflow_dispatch:
   schedule:
-    - cron: '17 18 * * 0'
+    - cron: '17 18 1 * *' # 매달 1일 18:17 UTC = 매달 2일 03:17 한국시간 (공휴일 갱신)
 permissions:
   contents: write
 jobs:
